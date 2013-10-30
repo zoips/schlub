@@ -45,102 +45,70 @@ describe("Services", function() {
             return new ServiceA();
         });
 
-        Services.register({ name: "serviceB", type: "typeA" }, function(serviceA) {
+        Services.register("serviceB/typeA", function(serviceA) {
             return new ServiceB(serviceA);
-        }, [{ name: "serviceA" }]);
+        }, ["serviceA"]);
 
-        Services.register({ name: "serviceB", type: "typeB" }, function() {
+        Services.register("serviceB/typeB", function() {
             return new ServiceB2();
         });
 
         Services.register("serviceC", function(serviceA, serviceB) {
             return new ServiceC(serviceA, serviceB);
-        }, [{ name: "serviceA" }, { name: "serviceB", type: "typeA" }]);
+        }, ["serviceA", "serviceB/typeA"]);
 
-        Services.register({ name: "serviceD", type: "typeA" }, function() {
+        Services.register("serviceD", function() {
             return new ServiceD();
         });
 
-        Services.register({ name: "serviceD", type: "typeA:instance" }, new ServiceD());
+        Services.register("serviceD/typeA/instance", new ServiceD());
 
         Services.register("serviceE", function(serviceA, serviceB, arg1, arg2) {
             return new ServiceE(serviceA, serviceB, arg1, arg2);
-        }, [{ name: "serviceA" }, { name: "serviceB", type: "typeB" }], { name: "serviceE" });
-
-        describe("#getByName", function() {
-            it("can retrieve all services by name", function() {
-                var serviceBs = Services.getByName("serviceB");
-                var service;
-                var services = 0;
-                var i;
-
-                assert.equal(serviceBs.length, 2, "did not get all serviceBs");
-
-                for (i = 0; i < serviceBs.length; i++) {
-                    service = Services.get(serviceBs[i]);
-
-                    switch (true) {
-                        case service.name === "service b":
-                            services += 1;
-                            break;
-                        case service.name === "service b2":
-                            services += 2;
-                            break;
-                    }
-                }
-
-                assert.equal(services, 3, "did not get got correct serviceBs");
-            });
-        });
-
-        describe("#getByType", function() {
-            it("can retrieve all services by type", function() {
-                var typeAs = Services.getByType("typeA");
-                var service;
-                var services = 0;
-                var i;
-
-                assert.equal(typeAs.length, 2, "did not get got all typeAs");
-
-                for (i = 0; i < typeAs.length; i++) {
-                    service = Services.get(typeAs[i]);
-
-                    switch (true) {
-                        case service.name === "service b":
-                            services += 1;
-                            break;
-                        case service.name === "service d":
-                            services += 2;
-                            break;
-                    }
-                }
-
-                assert.equal(services, 3, "did not get got correct typeAs");
-            });
-        });
+        }, ["serviceA", "serviceB/typeB"]);
 
         describe("#get", function() {
             it("can get a service with no dependencies", function() {
-                var serviceA = Services.get({ name: "serviceA" });
+                var serviceA = Services.get("serviceA");
 
                 assert.equal(serviceA.name, "service a", "did not get service a");
             });
 
-            it("can get a service with multiple types", function() {
-                var serviceB2 = Services.get({ name: "serviceB", type: "typeB" });
+            it("can get a service under a directory", function() {
+                var serviceB2 = Services.get("serviceB/typeB");
 
                 assert.equal(serviceB2.name, "service b2", "did not get service b2");
             });
 
+            it("can get all services under a directory", function() {
+                let services = Services.get({ type: "serviceB/*", allowMultiple: true });
+                let found = 0;
+
+                assert.equal(services.length, 2, "should be two services");
+
+                for (let i = 0; i < services.length; i++) {
+                    switch (true) {
+                        case services[i] instanceof ServiceB:
+                            found += 2;
+                            break;
+                        case services[i] instanceof ServiceB2:
+                            found += 4;
+                            break;
+                    }
+                }
+
+                assert.equal(found, 6, "did not get all services");
+            });
+
             it("can get a service with a single dependency", function() {
-                var serviceB = Services.get({ name: "serviceB", type: "typeA" });
+                var serviceB = Services.get("serviceB/typeA");
 
                 assert.equal(serviceB.name, "service b", "got service b");
                 assert.equal(serviceB.serviceA.constructor, ServiceA, "service b did not get ServiceA dependency");
             });
 
             it("can get a service with a deep dependency tree", function() {
-                var serviceC = Services.get({ name: "serviceC" });
+                var serviceC = Services.get("serviceC");
 
                 assert.equal(serviceC.name, "service c", "instantiated service c");
                 assert.equal(serviceC.serviceA.constructor, ServiceA, "service c did not get ServiceA dependency");
@@ -149,43 +117,24 @@ describe("Services", function() {
 
             it("allows none when getting", function() {
                 assert.doesNotThrow(function() {
-                    assert.strictEqual(Services.get({ name: "foo", allowNone: true }), null, "did not allow none");
+                    assert.strictEqual(Services.get({ type: "foo", allowNone: true }), null, "did not allow none");
                 }, "did not allow none");
             });
 
             it("throws when none", function() {
                 assert.throws(function() {
-                    Services.get({ name: "foo" });
+                    Services.get("foo");
                 });
-            });
-
-            it("allows multiple when getting", function() {
-                var serviceBs = Services.get({ name: "serviceB", allowMultiple: true });
-                var services = 0;
-                var i;
-
-                assert.equal(serviceBs.length, 2, "did not get service bs");
-
-                for (i = 0; i < serviceBs.length; i++) {
-                    switch (true) {
-                        case serviceBs[i].name === "service b": services += 1;
-                            break;
-                        case serviceBs[i].name === "service b2": services += 2;
-                            break;
-                    }
-                }
-
-                assert.equal(services, 3, "did not get all services");
             });
 
             it("throws when multiple", function() {
                 assert.throws(function() {
-                    Services.get({ name: "serviceB" });
+                    Services.get("serviceB/*");
                 });
             });
 
             it("get registered instance", function() {
-                var serviceDInstance = Services.get({ type: "typeA:instance" });
+                var serviceDInstance = Services.get("serviceD/typeA/instance");
 
                 assert.equal(serviceDInstance.name, "service d", "did not get service d instance");
             });
@@ -194,19 +143,18 @@ describe("Services", function() {
                 var serviceD = new ServiceD();
                 var triggered = false;
 
-                Services.once("register", function(name, type, service) {
-                    assert.equal(name, "serviceD", "triggered event did not have serviceD name");
-                    assert.equal(type, "typeA:instance", "triggered event did not have typeA:instance");
+                Services.once("register", function(type, service) {
+                    assert.equal(type, "serviceD/typeA/instance", "triggered event did not have serviceD/typeA/instance");
                     assert.equal(service, serviceD, "triggered event did not contain the service");
                     triggered = true;
                 });
-                Services.register({ name: "serviceD", type: "typeA:instance" }, serviceD);
+                Services.register("serviceD/typeA/instance", serviceD);
                 assert.ok(triggered, "event wasn't triggered");
             });
 
             it("pass in dependency", function() {
-                var serviceA = Services.get({ name: "serviceA" });
-                var serviceB = Services.get({ name: "serviceB", type: "typeA" }, [serviceA]);
+                var serviceA = Services.get("serviceA");
+                var serviceB = Services.get("serviceB/typeA", [serviceA]);
 
                 assert.ok(serviceB.serviceA === serviceA, "serviceA isn't the same");
             });
@@ -214,7 +162,7 @@ describe("Services", function() {
             it("pass in constructor args", function() {
                 var arg1 = "this is arg1";
                 var arg2 = "this is arg2";
-                var serviceE = Services.get({ name: "serviceE" }, [], [arg1, arg2]);
+                var serviceE = Services.get("serviceE", [], [arg1, arg2]);
 
                 assert.equal(serviceE.name, "service e", "wrong service");
                 assert.equal(serviceE.serviceA.constructor, ServiceA, "service e got wrong ServiceA dependency");
@@ -225,8 +173,8 @@ describe("Services", function() {
             });
 
             it("pass in specific dependency of multiple dependencies", function() {
-                var serviceB = Services.get({ name: "serviceB", type: "typeA" });
-                var serviceC = Services.get({ name: "serviceC" }, [null, serviceB]);
+                var serviceB = Services.get("serviceB/typeA");
+                var serviceC = Services.get("serviceC", [null, serviceB]);
 
                 assert.equal(serviceC.name, "service c", "instantiated service c");
                 assert.equal(serviceC.serviceA.constructor, ServiceA, "service c got ServiceA dependency");
@@ -236,8 +184,8 @@ describe("Services", function() {
             it("pass in specific dependency of multiple dependencies and constructor args", function() {
                 var arg1 = "this is arg1";
                 var arg2 = "this is arg2";
-                var serviceB = Services.get({ name: "serviceB", type: "typeA" });
-                var serviceE = Services.get({ name: "serviceE" }, [null, serviceB], [arg1, arg2]);
+                var serviceB = Services.get("serviceB/typeA");
+                var serviceE = Services.get("serviceE", [null, serviceB], [arg1, arg2]);
 
                 assert.equal(serviceE.name, "service e", "wrong service");
                 assert.equal(serviceE.serviceA.constructor, ServiceA, "service e got wrong ServiceA dependency");
@@ -245,7 +193,7 @@ describe("Services", function() {
 
                 assert.equal(serviceE.arg1, arg1, "arg1 is incorrect");
                 assert.equal(serviceE.arg2, arg2, "arg2 is incorrect");
-            });    
-        })
+            });
+        });
     });
 });

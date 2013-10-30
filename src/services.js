@@ -1,60 +1,40 @@
 "use strict";
 
 const _ = require("underscore");
-const EventEmitter = require("events").EventEmitter
+const EventEmitter = require("events").EventEmitter;
 const Q = require("q");
 const fs = require("fs");
 const fspath = require("path");
+const Directory = require("./directory");
 
 function Services() {
     const self = this;
 
-    self.services = [];
-    self.servicesByName = {};
-    self.servicesByType = {};
+    self.services = new Directory();
     self.servicesById = {};
-};
+}
 
 Services.prototype = new EventEmitter();
 
 _.extend(Services.prototype, {
     services: null,
-    servicesByName: null,
-    servicesByType: null,
     servicesById: null,
     serviceId: 0,
 
-    register: function(r, service, deps) {
+    register: function(type, service, deps) {
         const self = this;
         let id = self.serviceId++;
-        let name = typeof r === "object" ? r.name : r;
-        let type = typeof r === "object" ? r.type : null;
         let ref = {
             id: id,
-            name: name,
             service: service,
             type: type,
             deps: deps
         };
 
-        self.services.push(ref);
+        self.services.add(type, ref);
         self.servicesById[id] = ref;
 
-        if (!self.servicesByName[name]) {
-            self.servicesByName[name] = [];
-        }
-
-        self.servicesByName[name].push(ref);
-
-        if (typeof type !== "undefined" && type !== null) {
-            if (!self.servicesByType[type]) {
-                self.servicesByType[type] = [];
-            }
-
-            self.servicesByType[type].push(ref);
-        }
-
-        self.emit("register", name, type, service);
+        self.emit("register", type, service);
     },
 
     scan: Q.async(function*(paths) {
@@ -79,40 +59,6 @@ _.extend(Services.prototype, {
         }
     }),
 
-    getByName: function(name) {
-        const self = this;
-        let refs = self.servicesByName[name];
-
-        if (!refs) {
-            throw new Error("No services for name " + name);
-        }
-
-        return _.map(refs, function(ref) {
-            return {
-                id: ref.id,
-                name: ref.name,
-                type: ref.type
-            };
-        });
-    },
-
-    getByType: function(type) {
-        const self = this;
-        let refs = self.servicesByType[type];
-
-        if (!refs) {
-            throw new Error("No services for name " + name);
-        }
-
-        return refs.map(function(ref) {
-            return {
-                id: ref.id,
-                name: ref.name,
-                type: ref.type
-            };
-        });
-    },
-
     "get": function(desc) {
         const self = this;
         let refs;
@@ -122,18 +68,10 @@ _.extend(Services.prototype, {
 
         if (desc.id) {
             refs = [self.servicesById[desc.id]];
-        } else if (desc.name) {
-            refs = self.servicesByName[desc.name];
-
-            if (_.isArray(refs) && desc.type) {
-                refs = refs.filter(function(ref) {
-                    return ref.type === desc.type;
-                });
-            }
         } else if (desc.type) {
-            refs = self.servicesByType[desc.type];
+            refs = self.services.find(desc.type);
         } else {
-            throw new Error("Description ambiguous: " + JSON.stringify(desc));
+            refs = self.services.find(desc);
         }
 
         if (refs == null || refs.length === 0) {
