@@ -7,16 +7,16 @@ const fs = require("fs");
 const fspath = require("path");
 const Directory = require("./directory");
 
-function Services() {
+function Schlub() {
     const self = this;
 
     self.services = new Directory();
     self.servicesById = {};
 }
 
-Services.prototype = new EventEmitter();
+Schlub.prototype = new EventEmitter();
 
-_.extend(Services.prototype, {
+_.extend(Schlub.prototype, {
     services: null,
     servicesById: null,
     serviceId: 0,
@@ -112,4 +112,4 @@ _.extend(Services.prototype, {
     }
 });
 
-module.exports = new Services();
+module.exports = new Schlub();

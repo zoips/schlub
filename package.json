@@ -1,10 +1,10 @@
 {
-    "name": "services",
+    "name": "schlub",
     "version": "1.0.0",
     "directories": {
         "src": "./src"
     },
-    "main": "src/main",
+    "main": "src/schlub",
     "dependencies": {
         "q": "~0.9.7",
         "underscore": "~1.5.2"
