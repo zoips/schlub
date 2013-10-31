@@ -41,31 +41,37 @@ describe("schlub", function() {
             this.arg2 = arg2;
         }
 
-        schlub.register("serviceA", function() {
+        schlub.point("serviceA", function() {
             return new ServiceA();
         });
 
-        schlub.register("serviceB/typeA", function(serviceA) {
-            return new ServiceB(serviceA);
-        }, ["serviceA"]);
+        schlub.point("serviceB/typeA", ["serviceA"],
+            function(serviceA) {
+                return new ServiceB(serviceA);
+            }
+        );
 
-        schlub.register("serviceB/typeB", function() {
+        schlub.point("serviceB/typeB", function() {
             return new ServiceB2();
         });
 
-        schlub.register("serviceC", function(serviceA, serviceB) {
-            return new ServiceC(serviceA, serviceB);
-        }, ["serviceA", "serviceB/typeA"]);
+        schlub.point("serviceC", ["serviceA", "serviceB/typeA"],
+            function(serviceA, serviceB) {
+                return new ServiceC(serviceA, serviceB);
+            }
+        );
 
-        schlub.register("serviceD", function() {
+        schlub.point("serviceD", function() {
             return new ServiceD();
         });
 
-        schlub.register("serviceD/typeA/instance", new ServiceD());
+        schlub.point("serviceD/typeA/instance", new ServiceD());
 
-        schlub.register("serviceE", function(serviceA, serviceB, arg1, arg2) {
-            return new ServiceE(serviceA, serviceB, arg1, arg2);
-        }, ["serviceA", "serviceB/typeB"]);
+        schlub.point("serviceE", ["serviceA", "serviceB/typeB"],
+            function(serviceA, serviceB, arg1, arg2) {
+                return new ServiceE(serviceA, serviceB, arg1, arg2);
+            }
+        );
 
         describe("#get", function() {
             it("can get a service with no dependencies", function() {
@@ -148,7 +154,7 @@ describe("schlub", function() {
                     assert.equal(service, serviceD, "triggered event did not contain the service");
                     triggered = true;
                 });
-                schlub.register("serviceD/typeA/instance", serviceD);
+                schlub.point("serviceD/typeA/instance", serviceD);
                 assert.ok(triggered, "event wasn't triggered");
             });
 

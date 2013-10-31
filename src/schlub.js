@@ -21,9 +21,11 @@ _.extend(Schlub.prototype, {
     servicesById: null,
     serviceId: 0,
 
-    register: function(type, service, deps) {
+    point: function(type) {
         const self = this;
         let id = self.serviceId++;
+        let deps = arguments.length === 2 ? null : arguments[1];
+        let service = arguments.length === 2 ? arguments[1] : arguments[2];
         let ref = {
             id: id,
             service: service,
