@@ -24,13 +24,30 @@ _.extend(Schlub.prototype, {
     point: function(type) {
         const self = this;
         let id = self.serviceId++;
-        let deps = arguments.length === 2 ? null : arguments[1];
-        let service = arguments.length === 2 ? arguments[1] : arguments[2];
+        let deps;
+        let service;
+        let opts;
+
+        if (typeof arguments[1] === "function") {
+            deps = null;
+            service = arguments[1];
+            opts = arguments[2] || {};
+        } else if (!_.isArray(arguments[1])) {
+            deps = null;
+            service = arguments[1];
+            opts = arguments[2] || {};
+        } else {
+            deps = arguments[1];
+            service = arguments[2];
+            opts = arguments[3] || {};
+        }
+
         let ref = {
             id: id,
             service: service,
             type: type,
-            deps: deps
+            deps: deps,
+            opts: opts
         };
 
         self.services.add(type, ref);
@@ -61,12 +78,9 @@ _.extend(Schlub.prototype, {
         }
     }),
 
-    "get": function(desc) {
+    find: function(desc) {
         const self = this;
         let refs;
-        let suppliedDeps = arguments[1] || [];
-        let deps;
-        let args = arguments[2] || [];
 
         if (desc.id) {
             refs = [self.servicesById[desc.id]];
@@ -76,18 +90,36 @@ _.extend(Schlub.prototype, {
             refs = self.services.find(desc);
         }
 
-        if (refs == null || refs.length === 0) {
+        if (refs === null || typeof refs === "undefined" || refs.length === 0) {
             if (desc.allowNone) {
                 return null;
             } else {
-                throw new Error("No services for description: " + JSON.stringify(desc));
+                throw new Error("No schlubs for description: " + JSON.stringify(desc));
             }
         } else if (refs.length > 1 && !desc.allowMultiple) {
             throw new Error("Description ambiguous: " + JSON.stringify(desc));
         }
 
+        return refs;
+    },
+
+    "get": function(desc) {
+        const self = this;
+        let refs = self.find(desc);
+        let suppliedDeps = arguments[1] || [];
+        let deps;
+        let args = arguments[2] || [];
+
+        if (refs === null) {
+            return refs;
+        }
+
         refs = refs.map(function(ref) {
             if (ref.deps) {
+                if (ref.opts.singleton && !desc.newInstance && typeof ref.singleton !== "undefined") {
+                    return ref.singleton;
+                }
+
                 deps = ref.deps.map(function(dep, i) {
                     if (suppliedDeps[i]) {
                         return suppliedDeps[i];
@@ -96,10 +128,26 @@ _.extend(Schlub.prototype, {
                     }
                 });
 
-                return ref.service.apply(null, deps.concat(args));
+                let v = ref.service.apply(null, deps.concat(args));
+
+                if (ref.opts.singleton) {
+                    ref.singleton = v;
+                }
+
+                return v;
             } else {
                 if (typeof ref.service === "function") {
-                    return ref.service.apply(null, args);
+                    if (ref.opts.singleton && !desc.newInstance && typeof ref.singleton !== "undefined") {
+                        return ref.singleton;
+                    }
+
+                    let v = ref.service.apply(null, args);
+
+                    if (ref.opts.singleton) {
+                        ref.singleton = v;
+                    }
+
+                    return v;
                 } else {
                     return ref.service;
                 }
@@ -110,6 +158,29 @@ _.extend(Schlub.prototype, {
             return refs;
         } else {
             return refs[0];
+        }
+    },
+
+    forget: function(desc, schlub) {
+        const self = this;
+        let refs;
+
+        if (typeof desc === "string") {
+            refs = self.find({ type: desc, allowNone: true, allowMultiple: true });
+        } else {
+            refs = self.find(_.extend({}, desc, { allowNone: true, allowMultiple: true  }));
+        }
+
+        if (refs !== null) {
+            for (let i = 0; i < refs.length; i++) {
+                delete self.servicesById[refs[i].id];
+
+                if (schlub) {
+                    self.services.remove(refs[i].type, [schlub]);
+                } else {
+                    self.services.remove(refs[i].type);
+                }
+            }
         }
     }
 });

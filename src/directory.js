@@ -3,9 +3,10 @@
 const EventEmitter = require("events").EventEmitter;
 const _  = require("underscore");
 
-function Directory(type) {
+function Directory(type, parent) {
     const self = this;
 
+    self.parent = parent;
     self.children = {};
     self.values = [];
     self.type = type;
@@ -15,10 +16,11 @@ Directory.prototype = new EventEmitter();
 
 _.extend(Directory.prototype, {
     type: null,
+    parent: null,
     children: null,
     values: null,
 
-    find: function(path) {
+    findNodes: function(path) {
         const self = this;
         const types = path.split(/\//g);
         let nodes = [self];
@@ -51,6 +53,13 @@ _.extend(Directory.prototype, {
             }
         }
 
+        return nodes;
+    },
+
+    find: function(path) {
+        const self = this;
+        const nodes = self.findNodes(path);
+
         return nodes.reduce(function(values, node) {
             values.push.apply(values, node.values);
             return values;
@@ -68,7 +77,7 @@ _.extend(Directory.prototype, {
             child = node.children[type];
 
             if (typeof child === "undefined") {
-                child = node.children[type] = new Directory(type);
+                child = node.children[type] = new Directory(type, node);
             }
 
             node = child;
@@ -76,6 +85,31 @@ _.extend(Directory.prototype, {
         } while(types.length > 0);
 
         node.values.push(value);
+    },
+
+    remove: function(path, values) {
+        const self = this;
+        const nodes = self.findNodes(path);
+
+        if (values) {
+            for (let i = 0; i < nodes.length; i++) {
+                let node = nodes[i];
+
+                for (let j = 0; j < values.length; j++) {
+                    let idx = node.values.indexOf(values[j]);
+
+                    if (idx !== -1) {
+                        node.values.splice(idx, 1);
+                    }
+                }
+            }
+        } else {
+            for (let i = 0; i < nodes.length; i++) {
+                let node = nodes[i];
+
+                delete node.parent.children[node.type];
+            }
+        }
     }
 });
 

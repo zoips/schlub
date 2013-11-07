@@ -98,4 +98,83 @@ describe("Directory", function() {
             assert.strictEqual(a[2], t4, "foo/*/bar:[2] should be type t4");
         });
     });
+
+    describe("#remove", function() {
+
+        it("can remove all of a type", function() {
+            var tt = new Directory();
+            var t = { "asdf": "asdf" };
+            var t2 = { "foo": "bar" };
+            var t3 = { "not bar": "baz" };
+            var t4 = { "not baz" : "bar" };
+
+            tt.add("foo/baz/bar", t);
+            tt.add("foo/baz/bar", t2);
+            tt.add("foo/baz/chimps", t3);
+            tt.add("foo/knobs/bar", t4);
+
+            tt.remove("foo/baz/bar");
+
+            assert.equal(tt.find("foo/baz/bar").length, 0, "foo/baz/bar not removed");
+            assert.equal(tt.find("foo/baz/chimps").length, 1, "foo/baz/chimps incorrectly removed");
+            assert.equal(tt.find("foo/knobs/bar").length, 1, "foo/knobs/bar incorrectly removed");
+        });
+
+        it("can remove all with wildcard at end", function() {
+            var tt = new Directory();
+            var t = { "asdf": "asdf" };
+            var t2 = { "foo": "bar" };
+            var t3 = { "not bar": "baz" };
+            var t4 = { "not baz" : "bar" };
+
+            tt.add("foo/baz/bar", t);
+            tt.add("foo/baz/bar", t2);
+            tt.add("foo/baz/chimps", t3);
+            tt.add("foo/knobs/bar", t4);
+
+            tt.remove("foo/baz/*");
+
+            assert.equal(tt.find("foo/baz/bar").length, 0, "foo/baz/bar not removed");
+            assert.equal(tt.find("foo/baz/chimps").length, 0, "foo/baz/chimps not removed");
+            assert.equal(tt.find("foo/knobs/bar").length, 1, "foo/knobs/bar incorrectly removed");
+        });
+
+        it("can remove all with wildcard in middle", function() {
+            var tt = new Directory();
+            var t = { "asdf": "asdf" };
+            var t2 = { "foo": "bar" };
+            var t3 = { "not bar": "baz" };
+            var t4 = { "not baz" : "bar" };
+
+            tt.add("foo/baz/bar", t);
+            tt.add("foo/baz/bar", t2);
+            tt.add("foo/baz/chimps", t3);
+            tt.add("foo/knobs/bar", t4);
+
+            tt.remove("foo/*/bar");
+
+            assert.equal(tt.find("foo/baz/bar").length, 0, "foo/baz/bar not removed");
+            assert.equal(tt.find("foo/baz/chimps").length, 1, "foo/baz/chimps incorrectly removed");
+            assert.equal(tt.find("foo/knobs/bar").length, 0, "foo/knobs/bar not removed");
+        });
+
+        it("can remove a specific set", function() {
+            var tt = new Directory();
+            var t = { "asdf": "asdf" };
+            var t2 = { "foo": "bar" };
+            var t3 = { "not bar": "baz" };
+            var t4 = { "not baz" : "bar" };
+
+            tt.add("foo/baz/bar", t);
+            tt.add("foo/baz/bar", t2);
+            tt.add("foo/baz/chimps", t3);
+            tt.add("foo/knobs/bar", t4);
+
+            tt.remove("foo/*/bar", [t2, t4]);
+
+            assert.equal(tt.find("foo/baz/bar").length, 1, "foo/baz/bar:t2 not removed");
+            assert.strictEqual(tt.find("foo/baz/bar")[0], t, "foo/baz/bar:t2 not removed");
+            assert.equal(tt.find("foo/knobs/bar").length, 0, "foo/knobs/bar:t4 not removed");
+        });
+    });
 });

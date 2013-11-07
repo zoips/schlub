@@ -41,6 +41,11 @@ describe("schlub", function() {
             this.arg2 = arg2;
         }
 
+        function ServiceF(serviceA) {
+            this.name = "service f";
+            this.serviceA = serviceA;
+        }
+
         schlub.point("serviceA", function() {
             return new ServiceA();
         });
@@ -72,6 +77,12 @@ describe("schlub", function() {
                 return new ServiceE(serviceA, serviceB, arg1, arg2);
             }
         );
+
+        schlub.point("serviceF", ["serviceA"],
+            function(serviceA) {
+                return new ServiceF(serviceA);
+            },
+            { singleton: true });
 
         describe("#get", function() {
             it("can get a service with no dependencies", function() {
@@ -199,6 +210,40 @@ describe("schlub", function() {
 
                 assert.equal(serviceE.arg1, arg1, "arg1 is incorrect");
                 assert.equal(serviceE.arg2, arg2, "arg2 is incorrect");
+            });
+
+            it("returns the same singleton", function() {
+                var serviceF1 = schlub.get("serviceF");
+                var serviceF2 = schlub.get("serviceF");
+
+                assert.strictEqual(serviceF2, serviceF1, "serviceF is not a singleton");
+            });
+
+            it("returns a different instance of a singleton when asked", function() {
+                var serviceF1 = schlub.get("serviceF");
+                var serviceF2 = schlub.get({ type: "serviceF", newInstance: true });
+
+                assert.ok(serviceF1 !== serviceF2, "serviceF didn't return a new instance");
+            });
+        });
+
+        describe("#forget", function() {
+            it("can forget all of a type", function() {
+                let a = {};
+                let b = {};
+
+                schlub.point("forget/foo", a);
+                schlub.point("forget/foo", b);
+
+                let services = schlub.get({ type: "forget/foo", allowMultiple: true });
+
+                assert.equal(services.length, 2, "services weren't registered");
+
+                schlub.forget("forget/foo");
+
+                services = schlub.get({ type: "forget/foo", allowNone: true });
+
+                assert.strictEqual(services, null, "services weren't forgotten");
             });
         });
     });
