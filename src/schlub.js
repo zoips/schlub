@@ -23,7 +23,7 @@ _.extend(Schlub.prototype, {
 
     point: function(type) {
         const self = this;
-        let id = self.serviceId++;
+        const id = self.serviceId++;
         let deps;
         let service;
         let opts;
@@ -60,17 +60,17 @@ _.extend(Schlub.prototype, {
         paths = [].concat(paths);
 
         while (paths.length > 0) {
-            let dir = paths.shift();
-            let files = yield Q.nfcall(fs.readdir, dir)
+            const dir = paths.shift();
+            const files = yield Q.nfcall(fs.readdir, dir)
 
             for (let i = 0; i < files.length; i++) {
-                let path = [dir, files[i]].join(fspath.sep);
-                let stats = yield Q.nfcall(fs.stat, path);
+                const path = [dir, files[i]].join(fspath.sep);
+                const stats = yield Q.nfcall(fs.stat, path);
 
                 if (stats.isDirectory()) {
                     paths.push(path);
                 } else if (fspath.extname(path) === ".js") {
-                    let reqPath = path.match(/^(.*?)\.js$/)[1];
+                    const reqPath = path.match(/^(.*?)\.js$/)[1];
 
                     require(reqPath);
                 }
@@ -106,9 +106,9 @@ _.extend(Schlub.prototype, {
     "get": function(desc) {
         const self = this;
         let refs = self.find(desc);
-        let suppliedDeps = arguments[1] || [];
+        const suppliedDeps = arguments[1] || [];
         let deps;
-        let args = arguments[2] || [];
+        const args = arguments[2] || [];
 
         if (refs === null) {
             return refs;

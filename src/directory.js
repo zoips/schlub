@@ -23,7 +23,7 @@ _.extend(Directory.prototype, {
     findNodes: function(path) {
         const self = this;
         const types = path.split(/\//g);
-        let nodes = [self];
+        const nodes = [self];
 
         for (let i = 0; i < types.length; i++) {
             let type = types[i];
@@ -93,7 +93,7 @@ _.extend(Directory.prototype, {
 
         if (values) {
             for (let i = 0; i < nodes.length; i++) {
-                let node = nodes[i];
+                const node = nodes[i];
 
                 for (let j = 0; j < values.length; j++) {
                     let idx = node.values.indexOf(values[j]);
@@ -105,7 +105,7 @@ _.extend(Directory.prototype, {
             }
         } else {
             for (let i = 0; i < nodes.length; i++) {
-                let node = nodes[i];
+                const node = nodes[i];
 
                 delete node.parent.children[node.type];
             }
