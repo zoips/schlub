@@ -1,9 +1,20 @@
 {
     "name": "schlub",
     "version": "0.1.0",
+    "author": "Matt Eberts <downturn@gmail.com>",
+    "description": "Yet another IoC",
     "directories": {
         "src": "./src"
     },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/zoips/schlub.git"
+    },
+    "keywords": [
+        "ioc",
+        "service locator"
+    ],
+    "license": "MIT",
     "main": "src/schlub",
     "dependencies": {
         "q": "~0.9.7",
@@ -11,5 +22,8 @@
     },
     "devDependencies": {
         "mocha": "~1.13.0"
+    },
+    "engines": {
+        "node": ">=0.11.0"
     }
 }
