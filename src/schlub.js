@@ -2,7 +2,7 @@
 
 const _ = require("underscore");
 const EventEmitter = require("events").EventEmitter;
-const Q = require("q");
+const bluebird = require("bluebird");
 const fs = require("fs");
 const fspath = require("path");
 const Directory = require("./directory");
@@ -56,16 +56,19 @@ _.extend(Schlub.prototype, {
         self.emit("register", type, service);
     },
 
-    scan: Q.async(function*(paths) {
+    scan: bluebird.coroutine(function*(paths) {
         paths = [].concat(paths);
+
+        const stat = bluebird.promisify(fs.stat, fs);
+        const readdir = bluebird.promisify(fs.readdir, fs);
 
         while (paths.length > 0) {
             const dir = paths.shift();
-            const files = yield Q.nfcall(fs.readdir, dir)
+            const files = yield readdir(dir);
 
             for (let i = 0; i < files.length; i++) {
                 const path = [dir, files[i]].join(fspath.sep);
-                const stats = yield Q.nfcall(fs.stat, path);
+                const stats = yield stat(path);
 
                 if (stats.isDirectory()) {
                     paths.push(path);

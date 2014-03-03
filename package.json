@@ -17,7 +17,7 @@
     "license": "MIT",
     "main": "src/schlub",
     "dependencies": {
-        "q": "~0.9.7",
+        "bluebird": "~1.0.7",
         "underscore": "~1.5.2"
     },
     "devDependencies": {
