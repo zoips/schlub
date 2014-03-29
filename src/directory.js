@@ -105,7 +105,8 @@ _.extend(Directory.prototype, {
             }
         } else {
             for (let i = 0; i < nodes.length; i++) {
-                const node = nodes[i];
+                // const scoping rules in jshint are wrong
+                const node = nodes[i]; // jshint ignore:line
 
                 delete node.parent.children[node.type];
             }
